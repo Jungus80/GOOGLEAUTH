@@ -41,15 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
 		//echo"</pre>";
 
              
-			$Usuario = $_POST['usuario'];
+			$correo = $_POST['correo']; // Changed from usuario to correo
 			$ClaveKey = $_POST['contrasena'];
-			//echo "3l usuario es: ".$Usuario."<br>";
+			//echo "3l correo es: ".$correo."<br>";
 			//echo "3l ClaveKey es: ".$ClaveKey."<br>";
 
 			echo "La dirección IP es ".$_SERVER['REMOTE_ADDR'];
 			$ipRemoto = $_SERVER['REMOTE_ADDR'];
 
-			$Logearme = new ValidacionLogin($Usuario, $ClaveKey,$ipRemoto, $db);
+			$Logearme = new ValidacionLogin($correo, $ClaveKey,$ipRemoto, $db); // Pass correo
 			
 		
 			if ($Logearme->logger()){
@@ -58,12 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
 					//echo "Se ha loggeado el usuario satisfactoriamente <br>";
 					//Comenzar a Crear las SESIONES
 					$_SESSION['autenticado']= "SI";
-					$_SESSION['Usuario']= $Logearme->getUsuario();
+					$_SESSION['Usuario']= $Logearme->getCorreo(); // Get correo
 					//Redireccionar a la página principal.....
 					
 					
 					if (!$Logearme->registrarIntentos()) {
-						error_log("Fallo al registrar intento de login para usuario: " . $Usuario);
+						error_log("Fallo al registrar intento de login para usuario: " . $correo); // Use correo
 					}
 					$tokenizado=false;
 					redireccionar("formularios/PanelControl.php");
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
 				}else {
 
 					if (!$Logearme->registrarIntentos()) {
-						error_log("Fallo al registrar intento de login para usuario: " . $Usuario);
+						error_log("Fallo al registrar intento de login para usuario: " . $correo); // Use correo
 					}
 					
 					
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
 			}else {
 
 				if (!$Logearme->registrarIntentos()) {
-						error_log("Fallo al registrar intento de login para usuario: " . $Usuario);
+						error_log("Fallo al registrar intento de login para usuario: " . $correo); // Use correo
 				}
 				//echo "hola como estas logger <br>";
 				$_SESSION["emsg"] =1;

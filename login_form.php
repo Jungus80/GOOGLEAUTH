@@ -24,7 +24,10 @@
   $(document).ready(function(){
     $("#deteccionUser").validate({
  		 rules: {
-    		usuario: "required",
+    		correo: { // Changed from usuario to correo
+                required: true,
+                email: true // Added email validation
+            },
 			contrasena: "required",
 			
 		 }//fin de rules
@@ -95,8 +98,8 @@
             <tr>
               <td height="19" colspan="2"  align="center">Ing. Web | UTP</td></tr>
             <tr>
-              <td width="25%">Usuario:</td>
-              <td width="42%"><input  id="usuario" name="usuario" type="text" minlength="4" /></td>
+              <td width="25%">Correo:</td> <!-- Changed label to Correo -->
+              <td width="42%"><input  id="correo" name="correo" type="text" minlength="4" /></td> <!-- Changed id and name to correo -->
               <label for="label"></label>
             </tr>
             <tr>
@@ -136,6 +139,9 @@
     </form></div>
     <br />
 
+    <div align="center">
+        <p>¿No tienes una cuenta? <a href="register_form.php">Regístrate aquí</a></p>
+    </div>
   
   <?PHP include("comunes/footer.php");?>
   <!-- wrap ends here -->		

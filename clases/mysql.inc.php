@@ -12,12 +12,13 @@ class mod_db
 	{
 		
 		##### Setting SQL Vars #####
-		$sql_host = "localhost";
-		$sql_name = "company_info";
+		$sql_host = "127.0.0.1";
+		$sql_port = "3309";
+		$sql_name = "prueba69";
 		$sql_user = "root";	
-		$sql_pass = "demo";
+		$sql_pass = "";
 
-		$dsn = "mysql:host=$sql_host;dbname=$sql_name;charset=utf8mb4";
+		$dsn = "mysql:host=$sql_host;port=$sql_port;dbname=$sql_name;charset=utf8mb4";
 		try {
 			$this->conexion = new PDO($dsn, $sql_user, $sql_pass);
 			$this->conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -96,14 +97,14 @@ public function insertSeguro($tb_name, $data)
 	}
 
 
-	public function log($Usuario){
+	public function log($correo){
 
 	 // Preparar la consulta
 
 		 try {
-		 $sql = "SELECT * FROM usuarios WHERE Usuario = :User";
+		 $sql = "SELECT * FROM usuarios WHERE correo = :correo";
 		 $stmt = $this->conexion->prepare($sql);
-		 $stmt->bindParam(':User', $Usuario, PDO::PARAM_STR);
+		 $stmt->bindParam(':correo', $correo, PDO::PARAM_STR);
 
 		 // Ejecutar la consulta
 		 $stmt->execute();

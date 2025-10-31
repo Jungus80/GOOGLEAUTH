@@ -2,7 +2,7 @@
 final class ValidacionLogin{ 
     
 	Private $id;
-	Private $usuario;
+	Private $correo; // Changed from usuario to correo
 	Private $contrasena; 
 	Private $hastGenerado;
 	Private $loginExitoso = 0;
@@ -10,12 +10,12 @@ final class ValidacionLogin{
 	Private $pdo;
 	
 
-	Public function __construct($usuario,$contrasena, $ipRemoto, $pdo){ 
+	Public function __construct($correo,$contrasena, $ipRemoto, $pdo){ 
 	
-		//$this->usuario  = trim($usuario); 
+		//$this->correo  = trim($correo); 
 		//$nombreLimpio = SanitizarEntrada::limpiarCadena($nombre); 
 
-		$this->usuario  = SanitizarEntrada::limpiarCadena($usuario); 
+		$this->correo  = SanitizarEntrada::limpiarCadena($correo); // Sanitize correo
 		$this->contrasena  = SanitizarEntrada::limpiarCadena($contrasena); 
 		$this->ip  = $ipRemoto;
 
@@ -42,7 +42,7 @@ final class ValidacionLogin{
 
 	public function logger(){
 
-		$usuariologueado = $this->pdo->log($this->usuario);
+		$usuariologueado = $this->pdo->log($this->correo); // Pass correo to log function
 
 		if ($usuariologueado) {
 				$this->id =  $usuariologueado->id;
@@ -74,8 +74,8 @@ final class ValidacionLogin{
 	}
 	
 
-	public function getUsuario(){
-		return $this->usuario;
+	public function getCorreo(){ // Changed function name to getCorreo
+		return $this->correo;
 
 	}
 	
@@ -93,14 +93,14 @@ final class ValidacionLogin{
 	public function registrarIntentos(){ 
 		try {
 			$data = array(
-				"usuario" => $this->usuario,
+				"usuario" => $this->correo, // Use correo for logging attempts
 				"ipRemoto" => $this->ip,
 				"deteccionAnomalia" => $this->loginExitoso
 			);
 			$result = $this->pdo->insertSeguro("intentos_login", $data);
 			if (!$result) {
 				$errorInfo = $this->pdo->getConexion()->errorInfo();
-				error_log("Error al registrar intento de login para usuario: " . $this->usuario . " | SQLSTATE: " . $errorInfo[0] . " | Error: " . $errorInfo[2]);
+				error_log("Error al registrar intento de login para usuario: " . $this->correo . " | SQLSTATE: " . $errorInfo[0] . " | Error: " . $errorInfo[2]);
 				return false;
 			}
 			return true;
@@ -114,4 +114,4 @@ final class ValidacionLogin{
 } //fin ValidacionLogin
 
 
-?>		
+?>

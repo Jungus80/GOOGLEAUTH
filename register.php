@@ -3,8 +3,14 @@ session_start();
 include("clases/mysql.inc.php");
 include("clases/SanitizarEntrada.php");
 include("comunes/loginfunciones.php"); // Assuming this has the redireccionar function
+use Sonata\GoogleAuthenticator\GoogleAuthenticator; // Use Sonata's GoogleAuthenticator
+use Sonata\GoogleAuthenticator\GoogleQrUrl; // Use Sonata's GoogleQrUrl
+
+include("clases/SonataGoogleAuthenticator/GoogleAuthenticator.php"); // Include the 2FA library
+include("clases/SonataGoogleAuthenticator/GoogleQrUrl.php"); // Include the 2FA QR URL generator
 
 $db = new mod_db();
+$g = new GoogleAuthenticator(); // Instantiate Sonata's Google Authenticator
 
 $tokenizado = false;
 
@@ -68,6 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
     $options = ['cost' => 13];
     $hashedPassword = password_hash($contrasena, PASSWORD_BCRYPT, $options);
 
+    // Generate 2FA secret
+    $secret_2fa = $g->generateSecret(); // Use Sonata's generateSecret()
+
     // Insert new user into the database
     $data = array(
         "nombre" => $nombre,
@@ -75,12 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
         "correo" => $correo,
         "HashMagic" => $hashedPassword,
         "sexo" => $sexo,
-        "secret_2fa" => null // Assuming 2FA is not implemented yet
+        "secret_2fa" => $secret_2fa // Store the generated 2FA secret
     );
 
     if ($db->insertSeguro("usuarios", $data)) {
-        $_SESSION["reg_msg"] = "¡Registro exitoso! Ahora puedes iniciar sesión.";
-        redireccionar("login.php");
+        $_SESSION["reg_msg"] = "¡Registro exitoso! Por favor, configure su 2FA.";
+        $_SESSION['2fa_secret'] = $secret_2fa;
+        $_SESSION['2fa_email'] = $correo;
+        redireccionar("setup_2fa.php"); // Redirect to 2FA setup page
     } else {
         $_SESSION["reg_msg"] = "Error al registrar el usuario. Inténtelo de nuevo.";
         redireccionar("register_form.php");

@@ -57,16 +57,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
 				if ($Logearme->getIntentoLogin()){
 					//echo "Se ha loggeado el usuario satisfactoriamente <br>";
 					//Comenzar a Crear las SESIONES
-					$_SESSION['autenticado']= "SI";
-					$_SESSION['Usuario']= $Logearme->getCorreo(); // Get correo
-					//Redireccionar a la página principal.....
-					
-					
-					if (!$Logearme->registrarIntentos()) {
-						error_log("Fallo al registrar intento de login para usuario: " . $correo); // Use correo
+					// Fetch user details including secret_2fa
+					$stmt = $db->getConexion()->prepare("SELECT id, correo, secret_2fa FROM usuarios WHERE correo = :correo");
+					$stmt->bindParam(':correo', $correo, PDO::PARAM_STR);
+					$stmt->execute();
+					$user = $stmt->fetch(PDO::FETCH_OBJ);
+
+					if ($user && !empty($user->secret_2fa)) {
+						// 2FA is enabled, redirect to 2FA verification page
+						$_SESSION['user_id'] = $user->id;
+						$_SESSION['user_correo'] = $user->correo;
+						$_SESSION['2fa_required'] = true;
+						redireccionar("verify_2fa.php");
+					} else {
+						// No 2FA or 2FA not enabled, proceed to panel
+						$_SESSION['autenticado']= "SI";
+						$_SESSION['Usuario']= $Logearme->getCorreo(); // Get correo
+						
+						if (!$Logearme->registrarIntentos()) {
+							error_log("Fallo al registrar intento de login para usuario: " . $correo); // Use correo
+						}
+						$tokenizado=false;
+						redireccionar("formularios/PanelControl.php");
 					}
-					$tokenizado=false;
-					redireccionar("formularios/PanelControl.php");
 					// Si es exitoso puedo guardar en la base de datos el intento 
 					//  y desde que ip
 					// Sino lo es también debo guardar el IP

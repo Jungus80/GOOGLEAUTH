@@ -12,11 +12,12 @@ class mod_db
 	{
 		
 		##### Setting SQL Vars #####
+		##### Setting SQL Vars #####
 		$sql_host = "127.0.0.1";
 		$sql_port = "3309";
 		$sql_name = "prueba69";
-		$sql_user = "root";	
-		$sql_pass = "";
+		$sql_user = "nuevo_usuario";  
+		$sql_pass = "contraseña_segura";  
 
 		$dsn = "mysql:host=$sql_host;port=$sql_port;dbname=$sql_name;charset=utf8mb4";
 		try {

@@ -2,15 +2,11 @@
 session_start();
 include("clases/mysql.inc.php");
 include("clases/SanitizarEntrada.php");
+include("clases/RegistrationHandler.php"); // Include the new RegistrationHandler class
 include("comunes/loginfunciones.php"); // Assuming this has the redireccionar function
-use Sonata\GoogleAuthenticator\GoogleAuthenticator; // Use Sonata's GoogleAuthenticator
-use Sonata\GoogleAuthenticator\GoogleQrUrl; // Use Sonata's GoogleQrUrl
-
-include("clases/SonataGoogleAuthenticator/GoogleAuthenticator.php"); // Include the 2FA library
-include("clases/SonataGoogleAuthenticator/GoogleQrUrl.php"); // Include the 2FA QR URL generator
 
 $db = new mod_db();
-$g = new GoogleAuthenticator(); // Instantiate Sonata's Google Authenticator
+$registrationHandler = new RegistrationHandler($db);
 
 $tokenizado = false;
 
@@ -28,66 +24,42 @@ if ($token_enviado !== '' && $token_almacenado !== '' && hash_equals($token_alma
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenizado) {
-    $nombre = SanitizarEntrada::limpiarCadena($_POST['nombre'] ?? '');
-    $apellido = SanitizarEntrada::limpiarCadena($_POST['apellido'] ?? '');
-    $correo = SanitizarEntrada::limpiarCadena($_POST['correo'] ?? '');
-    $contrasena = $_POST['contrasena'] ?? '';
-    $confirm_contrasena = $_POST['confirm_contrasena'] ?? '';
-    $sexo = SanitizarEntrada::limpiarCadena($_POST['sexo'] ?? '');
+    $formData = $_POST;
 
-    // Basic validation
-    if (empty($nombre) || empty($apellido) || empty($correo) || empty($contrasena) || empty($confirm_contrasena) || empty($sexo)) {
-        $_SESSION["reg_msg"] = "Todos los campos son obligatorios.";
+    // Validate input
+    if (!$registrationHandler->validateInput($formData)) {
+        $_SESSION["reg_msg"] = implode("<br>", $registrationHandler->getErrors());
         redireccionar("register_form.php");
         exit;
     }
 
-    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-        $_SESSION["reg_msg"] = "El formato del correo electrónico no es válido.";
-        redireccionar("register_form.php");
-        exit;
-    }
+    $correo = SanitizarEntrada::limpiarEmail($formData['correo'] ?? '');
 
-    if ($contrasena !== $confirm_contrasena) {
-        $_SESSION["reg_msg"] = "Las contraseñas no coinciden.";
-        redireccionar("register_form.php");
-        exit;
-    }
-
-    if (strlen($contrasena) < 6) {
-        $_SESSION["reg_msg"] = "La contraseña debe tener al menos 6 caracteres.";
-        redireccionar("register_form.php");
-        exit;
-    }
-
-    // Check if email already exists
-    $stmt = $db->getConexion()->prepare("SELECT id FROM usuarios WHERE correo = :correo");
-    $stmt->bindParam(':correo', $correo, PDO::PARAM_STR);
-    $stmt->execute();
-    if ($stmt->rowCount() > 0) {
-        $_SESSION["reg_msg"] = "El correo electrónico ya está registrado.";
+    // Check for duplicate email
+    if ($registrationHandler->checkDuplicateEmail($correo)) {
+        $_SESSION["reg_msg"] = implode("<br>", $registrationHandler->getErrors());
         redireccionar("register_form.php");
         exit;
     }
 
     // Hash the password
-    $options = ['cost' => 13];
-    $hashedPassword = password_hash($contrasena, PASSWORD_BCRYPT, $options);
+    $hashedPassword = $registrationHandler->hashPassword($formData['contrasena']);
 
     // Generate 2FA secret
-    $secret_2fa = $g->generateSecret(); // Use Sonata's generateSecret()
+    $secret_2fa = $registrationHandler->generate2faSecret();
 
-    // Insert new user into the database
+    // Prepare user data for insertion
     $data = array(
-        "nombre" => $nombre,
-        "apellido" => $apellido,
+        "nombre" => SanitizarEntrada::limpiarCadena($formData['nombre'] ?? ''),
+        "apellido" => SanitizarEntrada::limpiarCadena($formData['apellido'] ?? ''),
         "correo" => $correo,
         "HashMagic" => $hashedPassword,
-        "sexo" => $sexo,
-        "secret_2fa" => $secret_2fa // Store the generated 2FA secret
+        "sexo" => SanitizarEntrada::limpiarCadena($formData['sexo'] ?? ''),
+        "secret_2fa" => $secret_2fa
     );
 
-    if ($db->insertSeguro("usuarios", $data)) {
+    // Insert new user into the database
+    if ($registrationHandler->registerUser($data)) {
         $_SESSION["reg_msg"] = "¡Registro exitoso! Por favor, configure su 2FA.";
         $_SESSION['2fa_secret'] = $secret_2fa;
         $_SESSION['2fa_email'] = $correo;
